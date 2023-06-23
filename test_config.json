@@ -9,6 +9,10 @@
       {
         "type": "git",
         "url": "https://github.com/minetest-mods/3d_armor"
+      },
+      {
+        "type": "git",
+        "url": "https://github.com/minetest-mods/mesecons"
       }
     ]
   }
