@@ -127,7 +127,7 @@ def main(config_file: io.TextIOWrapper, collection: str):
     with rich.progress.Progress(rich.progress.SpinnerColumn(spinner_name="arrow3"),
                                 rich.progress.TextColumn("[progress.description]{task.description}"),
                                 rich.progress.BarColumn(), rich.progress.MofNCompleteColumn(),
-                                rich.progress.TimeRemainingColumn(), rich.progress.TimeElapsedColumn(),
+                                rich.progress.TimeElapsedColumn(),
                                 console=console) as progress:
         task_mod = progress.add_task(f"[green]Updating mods...", total=mod_count, start=False)
         task_games = progress.add_task(f"[green]Updating games...", total=3, start=False)
