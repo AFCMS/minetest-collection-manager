@@ -100,8 +100,10 @@ def update_package_git_repo(package: ConfigPackage, collection_folder: pathlib.P
 
 @click.command()
 @click.argument("config_file", type=click.File("r"))
-@click.argument("collection", type=str)
-def main(config_file: io.TextIOWrapper, collection: str):
+@click.argument("collection",
+                type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True, resolve_path=False,
+                                allow_dash=False, path_type=pathlib.Path))
+def main(config_file: io.TextIOWrapper, collection: pathlib.Path):
     # Load console and config file
     console = rich.console.Console()
 
@@ -120,9 +122,8 @@ def main(config_file: io.TextIOWrapper, collection: str):
     mod_count = len(config["content"]["mods"])
     console.log(f"[green]Updating {mod_count} mods...")
 
-    # TODO: use CLI parameter
     # Determine the collection folder
-    collection_folder = pathlib.Path("test_collection")
+    collection_folder = collection.absolute()
 
     with rich.progress.Progress(rich.progress.SpinnerColumn(spinner_name="arrow3"),
                                 rich.progress.TextColumn("[progress.description]{task.description}"),
@@ -139,10 +140,6 @@ def main(config_file: io.TextIOWrapper, collection: str):
             if mod["type"] == "git":
                 update_package_git_repo(mod, collection_folder_mods, console)
                 progress.update(task_mod, advance=1)
-
-    # console.log(type(config_file), config_file)
-    # git.Repo(pathlib.Path("~/dev-setup/ai-wallpapers"))
-    # git.Repo("https://github.com/textualize/rich")
 
 
 if __name__ == '__main__':
