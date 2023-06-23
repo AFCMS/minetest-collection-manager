@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "Config schema for Minetest Collection Manager",
+  "type": "object",
+  "properties": {
+    "content": {
+      "description": "Definition of required packages",
+      "type": "object",
+      "properties": {
+        "mods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "git"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "description": "URL of the Git repository"
+              },
+              "folder_name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Name of the folder where the mod will be stored"
+              }
+            },
+            "required": [
+              "type",
+              "url"
+            ],
+            "examples": [
+              {
+                "type": "git",
+                "url": "https://github.com/minetest-palamod/palamod"
+              }
+            ]
+          },
+          "uniqueItems": true
+        },
+        "games": {}
+      },
+      "required": [
+        "mods"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "content"
+  ]
+}
