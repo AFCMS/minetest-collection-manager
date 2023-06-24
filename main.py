@@ -48,6 +48,7 @@ class ConfigPackage(TypedDict):
 
 class ConfigContent(TypedDict):
     mods: List[ConfigPackage]
+    games: List[ConfigPackage]
 
 
 class Config(TypedDict):

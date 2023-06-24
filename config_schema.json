@@ -1,5 +1,45 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
+  "definitions": {
+    "package": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "git"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "URL of the Git repository"
+        },
+        "folder_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the folder where the mod will be stored"
+        }
+      },
+      "required": [
+        "type",
+        "url"
+      ],
+      "examples": [
+        {
+          "type": "git",
+          "url": "https://github.com/minetest-palamod/palamod"
+        }
+      ]
+    },
+    "package_array": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/package"
+      },
+      "uniqueItems": true
+    }
+  },
   "description": "Config schema for Minetest Collection Manager",
   "type": "object",
   "properties": {
@@ -8,44 +48,15 @@
       "type": "object",
       "properties": {
         "mods": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "git"
-                ]
-              },
-              "url": {
-                "type": "string",
-                "minLength": 1,
-                "description": "URL of the Git repository"
-              },
-              "folder_name": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Name of the folder where the mod will be stored"
-              }
-            },
-            "required": [
-              "type",
-              "url"
-            ],
-            "examples": [
-              {
-                "type": "git",
-                "url": "https://github.com/minetest-palamod/palamod"
-              }
-            ]
-          },
-          "uniqueItems": true
+          "$ref": "#/definitions/package_array"
         },
-        "games": {}
+        "games": {
+          "$ref": "#/definitions/package_array"
+        }
       },
       "required": [
-        "mods"
+        "mods",
+        "games"
       ],
       "additionalProperties": false
     }
