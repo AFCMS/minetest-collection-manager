@@ -14,6 +14,12 @@
         "type": "git",
         "url": "https://github.com/minetest-mods/mesecons"
       }
+    ],
+    "games": [
+      {
+        "type": "git",
+        "url": "https://github.com/MT-CTF/capturetheflag"
+      }
     ]
   }
 }
