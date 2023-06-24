@@ -89,10 +89,10 @@ def update_package_git_repo(package: ConfigPackage, collection_folder: pathlib.P
                 f"[red]Can't update [blue]{package['url']}[red], ",
                 f"[red]remote \"origin\" do not exist")
 
-    except git.NoSuchPathError as e:
+    except git.NoSuchPathError:
         git.Repo.clone_from(package["url"], package_folder)
         console.log(f"[green]Cloned [blue]{package['url']}")
-    except git.InvalidGitRepositoryError as e:
+    except git.InvalidGitRepositoryError:
         console.log(
             f"[red]Can't update [blue]{package['url']}[red], folder is not a "
             f"Git repository")
