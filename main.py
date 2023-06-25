@@ -85,6 +85,9 @@ def update_package_git_repo(package: ConfigPackage, collection_folder: pathlib.P
 
             # console.log("DEFAULT REMOTE BRANCH:", default_remote_branch)
 
+            # Update submodules
+            repo.submodule_update()
+
             console.log(f"[green]Updated [blue]{package['url']}")
         except ValueError:
             console.log(
