@@ -44,6 +44,7 @@ class ConfigPackage(TypedDict):
     type: Literal["git"]
     url: str
     folder_name: Optional[str]
+    git_remote_branch: Optional[str]
 
 
 class ConfigContent(TypedDict):
@@ -75,8 +76,8 @@ def update_package_git_repo(package: ConfigPackage, collection_folder: pathlib.P
             # Fetch remote changes
             remote.fetch()
 
-            # Get remote default branch name usually "master" or "main"
-            default_remote_branch = remote.refs[0].remote_head
+            # Get remote default branch name usually "master" or "main" or use configured branch name
+            default_remote_branch = package.get("git_remote_branch") or remote.refs[0].remote_head
 
             # Pull remote changes
             remote_pull_changes = remote.pull(default_remote_branch)

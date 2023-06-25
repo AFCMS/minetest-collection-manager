@@ -19,6 +19,11 @@
           "type": "string",
           "minLength": 1,
           "description": "Name of the folder where the mod will be stored"
+        },
+        "git_remote_branch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the branch to pull from (auto determined in most cases by default)"
         }
       },
       "required": [
