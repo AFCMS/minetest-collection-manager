@@ -9,3 +9,19 @@ stuff.
 
 **It is done with the idea that all the mods _must_ be updated when possible. It is suitable for personnal collection if
 you stay updated to latest Minetest versions, not for maintaining servers.**
+
+## Installation
+
+Make sure to have Python3 and PIP installed (tested with version 3.10 and above)
+
+Go to the source code folder:
+
+```shell
+pip3 install -r requirements.txt
+```
+
+Then you can run the script:
+
+```shell
+python3 ./main.py --help
+```
