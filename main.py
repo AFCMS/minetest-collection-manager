@@ -287,5 +287,21 @@ in world.mt in the world directory.""")
                 progress.update(task_games, advance=1)
 
 
+@cli.command()
+def sync_dev():
+    """
+    Sync a development folder with a collection folder by symlinking all folders if possible
+    """
+    pass
+
+
+@cli.command()
+def sync():
+    """
+    Sync a collection folder with a Minetest user directory
+    """
+    pass
+
+
 if __name__ == '__main__':
     cli()
