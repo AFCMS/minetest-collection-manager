@@ -149,9 +149,10 @@ def cli():
 @click.argument("package_type", type=click.Choice(["git"], case_sensitive=False))
 @click.argument("url", type=str)
 @click.option("--folder-name", type=str)
+@click.option("--git-remote-branch", type=str, default=None)
 @click.option("--sort", is_flag=True, show_default=True, default=False)
 def add_package(config_file: pathlib.Path, category: Literal["mods"], package_type: Literal["git"], url: str,
-                folder_name: Optional[str], sort: bool):
+                folder_name: Optional[str], git_remote_branch: Optional[str], sort: bool):
     # Load console and config file
     console = rich.console.Console()
 
@@ -177,12 +178,11 @@ def add_package(config_file: pathlib.Path, category: Literal["mods"], package_ty
         "url": url
     })
 
+    if git_remote_branch:
+        config["content"][category][-1]["git_remote_branch"] = git_remote_branch
+
     if sort or config.get("auto_sort"):
         config["content"][category].sort(key=lambda e: e["url"])
-
-    console.print(config["content"][category])
-
-    # TODO: find if entry is duplicate, or if cloned name is duplicate
 
     with config_file.open("w") as f:
         json.dump(config, f, indent="\t")
