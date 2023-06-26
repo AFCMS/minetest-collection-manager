@@ -60,6 +60,9 @@ class Config(TypedDict):
     auto_sort: Optional[bool]
 
 
+PackageCategory = Literal["mods"]
+PackageType = Literal["git"]
+
 ASSUMED_REMOTE_NAME = "origin"
 
 
@@ -151,8 +154,11 @@ def cli():
 @click.option("--folder-name", type=str)
 @click.option("--git-remote-branch", type=str, default=None)
 @click.option("--sort", is_flag=True, show_default=True, default=False)
-def add_package(config_file: pathlib.Path, category: Literal["mods"], package_type: Literal["git"], url: str,
+def add_package(config_file: pathlib.Path, category: PackageCategory, package_type: PackageType, url: str,
                 folder_name: Optional[str], git_remote_branch: Optional[str], sort: bool):
+    """
+    Add package to given config file
+    """
     # Load console and config file
     console = rich.console.Console()
 
@@ -183,6 +189,30 @@ def add_package(config_file: pathlib.Path, category: Literal["mods"], package_ty
 
     if sort or config.get("auto_sort"):
         config["content"][category].sort(key=lambda e: e["url"])
+
+    with config_file.open("w") as f:
+        json.dump(config, f, indent="\t")
+
+
+@cli.command()
+@click.argument("config_file",
+                type=click.Path(file_okay=True, dir_okay=False, writable=True, readable=True, resolve_path=True,
+                                allow_dash=False, path_type=pathlib.Path))
+@click.argument("category", type=click.Choice(["mods"], case_sensitive=False))
+@click.argument("package_type", type=click.Choice(["git"], case_sensitive=False))
+@click.argument("url", type=str)
+def remove_package(config_file: pathlib.Path, category: PackageCategory, package_type: PackageType, url: str):
+    """
+    Remove package from given config file
+    """
+    # Load console and config file
+    console = rich.console.Console()
+
+    with config_file.open("r") as f:
+        config = get_validated_config(f, console)
+
+    config["content"][category] = [d for d in config["content"][category] if
+                                   d.get("url") != url or d.get("type") != package_type]
 
     with config_file.open("w") as f:
         json.dump(config, f, indent="\t")
