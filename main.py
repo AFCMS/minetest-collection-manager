@@ -222,8 +222,8 @@ def update(config_file: io.TextIOWrapper, collection: pathlib.Path):
         if game_count == 0:
             progress.stop_task(task_games)
 
-        progress.start_task(task_mods)
         collection_folder_mods = collection_folder / "mods"
+        collection_folder_games = collection_folder / "games"
 
         # Create a "mods_here.txt" file in the mods collection folder to not get git modified files
         # when linking collection folder to static Minetest install cloned with Git
@@ -241,12 +241,20 @@ To enable them, go to the configure world window in the main menu or write
 
 in world.mt in the world directory.""")
 
+        progress.start_task(task_mods)
         for mod in config["content"]["mods"]:
 
             if mod["type"] == "git":
                 update_package_git_repo(mod, collection_folder_mods, console)
                 # time.sleep(1)
                 progress.update(task_mods, advance=1)
+
+        progress.start_task(task_games)
+        for game in config["content"]["games"]:
+
+            if game["type"] == "git":
+                update_package_git_repo(game, collection_folder_games, console)
+                progress.update(task_games, advance=1)
 
 
 if __name__ == '__main__':
