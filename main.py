@@ -255,22 +255,6 @@ def update(config_file: io.TextIOWrapper, collection: pathlib.Path):
         collection_folder_mods = collection_folder / "mods"
         collection_folder_games = collection_folder / "games"
 
-        # Create a "mods_here.txt" file in the mods collection folder to not get git modified files
-        # when linking collection folder to static Minetest install cloned with Git
-        collection_folder_mods_text_file = collection_folder_mods / "mods_here.txt"
-        if not collection_folder_mods_text_file.exists():
-            with collection_folder_mods_text_file.open("w+") as f:
-                f.write("""You can use the content tab in the main menu
-
- OR
-
-You can install Minetest mods by copying (and extracting) them into this folder.
-To enable them, go to the configure world window in the main menu or write
-
-  load_mod_<modname> = true
-
-in world.mt in the world directory.""")
-
         progress.start_task(task_mods)
         for mod in config["content"]["mods"]:
 
@@ -296,12 +280,51 @@ def sync_dev():
 
 
 @cli.command()
-def sync():
+@click.argument("collection",
+                type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True, resolve_path=True,
+                                allow_dash=False, path_type=pathlib.Path))
+@click.argument("user_directory",
+                type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True, resolve_path=True,
+                                allow_dash=False, path_type=pathlib.Path))
+def sync(collection: pathlib.Path, user_directory: pathlib.Path):
     """
     Sync a collection folder with a Minetest user directory
     """
-    pass
+    # Load console
+    console = rich.console.Console()
+
+    user_directory_games = user_directory / "games"
+    collection_games = collection / "games"
+
+    user_directory_mods = user_directory / "mods"
+    collection_mods = collection / "mods"
+
+    # Link Games
+    if collection_games.exists() and collection_games.is_dir():
+        for p in collection_games.iterdir():
+            if p.is_dir():
+                if (user_directory_games / p.name).exists():
+                    if (user_directory_games / p.name).is_symlink() and (user_directory_games / p.name).readlink() == p:
+                        console.log(f"[green] [blue]{p.name}[green] game is already linked in user install")
+                    else:
+                        console.log(f"[red] Cant link [blue]{p.name}[red] game, folder already exist in user install")
+                else:
+                    (user_directory_games / p.name).symlink_to(p)
+                    console.log(f"[green] Linked [blue]{p.name}[green] game in user install")
+
+    # Link Mods
+    if collection_mods.exists() and collection_mods.is_dir():
+        for p in collection_mods.iterdir():
+            if p.is_dir():
+                if (user_directory_mods / p.name).exists():
+                    if (user_directory_mods / p.name).is_symlink() and (user_directory_mods / p.name).readlink() == p:
+                        console.log(f"[green] [blue]{p.name}[green] mod is already linked in user install")
+                    else:
+                        console.log(f"[red] Cant link [blue]{p.name}[red] mod, folder already exist in user install")
+                else:
+                    (user_directory_mods / p.name).symlink_to(p)
+                    console.log(f"[green] Linked [blue]{p.name}[green] mod in user install")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
