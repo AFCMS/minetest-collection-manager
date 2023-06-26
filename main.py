@@ -3,8 +3,7 @@ import json
 import pathlib
 import re
 import urllib.parse
-
-from typing import TypedDict, Literal, Optional, List
+from typing import TypedDict, Literal, Optional, List, Union, NoReturn, TextIO
 
 import click
 import git
@@ -16,6 +15,10 @@ import rich.traceback
 rich.traceback.install(show_locals=False)
 
 git_folder_pattern = re.compile(r"([a-zA-Z1-9_-]+)")
+
+
+# TODO: better schema validation
+# https://stackoverflow.com/questions/38717933/jsonschema-attribute-conditionally-required
 
 
 def git_folder_name(url: str):
@@ -54,6 +57,7 @@ class ConfigContent(TypedDict):
 
 class Config(TypedDict):
     content: ConfigContent
+    auto_sort: Optional[bool]
 
 
 ASSUMED_REMOTE_NAME = "origin"
@@ -103,17 +107,17 @@ def update_package_git_repo(package: ConfigPackage, collection_folder: pathlib.P
             f"Git repository")
 
 
-@click.command()
-@click.argument("config_file", type=click.File("r"))
-@click.argument("collection",
-                type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True, resolve_path=False,
-                                allow_dash=False, path_type=pathlib.Path))
-def main(config_file: io.TextIOWrapper, collection: pathlib.Path):
-    # Load console and config file
-    console = rich.console.Console()
+def get_validated_config(config_file: TextIO, console: rich.console.Console) -> Union[Config, NoReturn]:
+    """
+    Get validated config from file or crash with output to console
+    """
 
-    config = json.load(config_file)
-    config: Config = config
+    config: Config
+    try:
+        config = json.load(config_file)
+    except json.JSONDecodeError as e:
+        console.log("[red] Malformed config file:", e.args[0])
+        exit(1)
 
     # Validate config file
     with open("config_schema.json") as config_schema_file:
@@ -124,7 +128,82 @@ def main(config_file: io.TextIOWrapper, collection: pathlib.Path):
             console.log("[red] Malformed config file:", e.args[0])
             exit(1)
 
+    return config
+
+
+# TODO: use dedicated rich-click when availlable
+
+@click.group()
+def cli():
+    """
+    Minetest Collection Manager
+    """
+    pass
+
+
+@cli.command()
+@click.argument("config_file",
+                type=click.Path(file_okay=True, dir_okay=False, writable=True, readable=True, resolve_path=True,
+                                allow_dash=False, path_type=pathlib.Path))
+@click.argument("category", type=click.Choice(["mods"], case_sensitive=False))
+@click.argument("package_type", type=click.Choice(["git"], case_sensitive=False))
+@click.argument("url", type=str)
+@click.option("--folder-name", type=str)
+@click.option("--sort", is_flag=True, show_default=True, default=False)
+def add_package(config_file: pathlib.Path, category: Literal["mods"], package_type: Literal["git"], url: str,
+                folder_name: Optional[str], sort: bool):
+    # Load console and config file
+    console = rich.console.Console()
+
+    with config_file.open("r") as f:
+        config = get_validated_config(f, console)
+
+    # Check if a package with the same url is already present for the category
+    is_url_present = any(p["url"] == url for p in config["content"][category])
+    if is_url_present:
+        console.log("[red] Package with same URL already exist for the category")
+        exit(1)
+
+    # Check if a package with the same folder name is already present for the category
+    final_folder_name = folder_name or git_folder_name(url)
+    is_folder_name_present = any(
+        (p.get("folder_name") or git_folder_name(p["url"])) == final_folder_name for p in config["content"][category])
+    if is_folder_name_present:
+        console.log("[red] Package with same folder name already exist")
+        exit(1)
+
+    config["content"][category].append({
+        "type": package_type,
+        "url": url
+    })
+
+    if sort or config.get("auto_sort"):
+        config["content"][category].sort(key=lambda e: e["url"])
+
+    console.print(config["content"][category])
+
+    # TODO: find if entry is duplicate, or if cloned name is duplicate
+
+    with config_file.open("w") as f:
+        json.dump(config, f, indent="\t")
+
+
+@cli.command()
+@click.argument("config_file", type=click.File("r"))
+@click.argument("collection",
+                type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True, resolve_path=True,
+                                allow_dash=False, path_type=pathlib.Path))
+def update(config_file: io.TextIOWrapper, collection: pathlib.Path):
+    """
+    Update packages in given collection folder using given config file
+    """
+    # Load console and config file
+    console = rich.console.Console()
+
+    config = get_validated_config(config_file, console)
+
     mod_count = len(config["content"]["mods"])
+    game_count = len(config["content"]["games"])
     console.log(f"[green]Updating {mod_count} mods...")
 
     # Determine the collection folder
@@ -135,17 +214,40 @@ def main(config_file: io.TextIOWrapper, collection: pathlib.Path):
                                 rich.progress.BarColumn(), rich.progress.MofNCompleteColumn(),
                                 rich.progress.TimeElapsedColumn(),
                                 console=console) as progress:
-        task_mod = progress.add_task(f"[green]Updating mods...", total=mod_count, start=False)
-        task_games = progress.add_task(f"[green]Updating games...", total=3, start=False)
+        task_mods = progress.add_task(f"[green]Updating mods...", total=mod_count, start=(mod_count == 0))
+        task_client_mods = progress.add_task(f"[green]Updating client mods...", total=3, start=False)
+        task_games = progress.add_task(f"[green]Updating games...", total=game_count, start=(game_count == 0))
+        task_texturepacks = progress.add_task(f"[green]Updating texture packs...", total=3, start=False)
 
-        progress.start_task(task_mod)
+        if game_count == 0:
+            progress.stop_task(task_games)
+
+        progress.start_task(task_mods)
         collection_folder_mods = collection_folder / "mods"
+
+        # Create a "mods_here.txt" file in the mods collection folder to not get git modified files
+        # when linking collection folder to static Minetest install cloned with Git
+        collection_folder_mods_text_file = collection_folder_mods / "mods_here.txt"
+        if not collection_folder_mods_text_file.exists():
+            with collection_folder_mods_text_file.open("w+") as f:
+                f.write("""You can use the content tab in the main menu
+
+ OR
+
+You can install Minetest mods by copying (and extracting) them into this folder.
+To enable them, go to the configure world window in the main menu or write
+
+  load_mod_<modname> = true
+
+in world.mt in the world directory.""")
+
         for mod in config["content"]["mods"]:
 
             if mod["type"] == "git":
                 update_package_git_repo(mod, collection_folder_mods, console)
-                progress.update(task_mod, advance=1)
+                # time.sleep(1)
+                progress.update(task_mods, advance=1)
 
 
 if __name__ == '__main__':
-    main()
+    cli()
