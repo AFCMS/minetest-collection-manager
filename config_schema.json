@@ -64,6 +64,10 @@
         "games"
       ],
       "additionalProperties": false
+    },
+    "auto_sort": {
+      "description": "If true, automaticaly sort the entries when changing packages",
+      "type": "boolean"
     }
   },
   "required": [
