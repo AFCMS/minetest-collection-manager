@@ -3,6 +3,7 @@ import json
 import pathlib
 import re
 import urllib.parse
+import urllib.request
 from typing import TypedDict, Literal, Optional, List, Union, NoReturn, TextIO, Tuple
 
 import click
@@ -138,6 +139,15 @@ def update_package_git_repo(package: ConfigPackage, collection_folder: pathlib.P
         console.log(
             f"[red]Can't update [blue]{package['url']}[red], folder is not a "
             f"Git repository")
+
+
+def get_cdb_package_list(url: str) -> List[CDBPackage]:
+    result = urllib.request.urlopen(url + "/api/packages/?type=mod&type=game&type=txp")
+    return result
+
+
+def update_package_cdb(package: ConfigPackage, collection_folder: pathlib.Path, console: rich.console.Console):
+    pass
 
 
 def get_validated_config(config_file: TextIO, console: rich.console.Console) -> Union[Config, NoReturn]:
@@ -357,6 +367,28 @@ def sync(collection: pathlib.Path, user_directory: pathlib.Path):
 
     for cat in ["mods", "client_mods", "games", "texture_packs"]:
         sync_folders(collection / cat, user_directory / cat, cat, console)
+
+
+@cli.command()
+@click.argument("config_file", type=click.File("w+"))
+@click.option("--schema", is_flag=True, default=False)
+@click.option("--auto-sort", is_flag=True, default=False)
+def create_config(config_file: io.TextIOWrapper, schema: bool, auto_sort: bool):
+    # Load console
+    console = rich.console.Console()
+
+    json.dump({
+        "$schema": schema and str(pathlib.Path(__file__).parent / "config_schema.json") or None,
+        "content": {
+            "mods": [],
+            "client_mods": [],
+            "games": [],
+            "texture_packs": []
+        },
+        "auto_sort": auto_sort
+    }, config_file, indent="\t")
+
+    console.log(f"[green] Config file created (schema={schema}, auto_sort={auto_sort})")
 
 
 if __name__ == "__main__":
