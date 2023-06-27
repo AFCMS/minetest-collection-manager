@@ -58,11 +58,15 @@ def cdb_package_infos(url: str) -> Optional[Tuple[str, str]]:
     return url_path_parts[1], url_path_parts[2]
 
 
+PackageCategory = Literal["mods"]
+PackageType = Literal["git"]
+
+
 class ConfigPackage(TypedDict):
     """
     Represent a package in the configuration file
     """
-    type: Literal["git"]
+    type: PackageType
     url: str
     folder_name: Optional[str]
     git_remote_branch: Optional[str]
@@ -77,9 +81,6 @@ class Config(TypedDict):
     content: ConfigContent
     auto_sort: Optional[bool]
 
-
-PackageCategory = Literal["mods"]
-PackageType = Literal["git"]
 
 ASSUMED_REMOTE_NAME = "origin"
 
