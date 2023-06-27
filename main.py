@@ -3,7 +3,7 @@ import json
 import pathlib
 import re
 import urllib.parse
-from typing import TypedDict, Literal, Optional, List, Union, NoReturn, TextIO
+from typing import TypedDict, Literal, Optional, List, Union, NoReturn, TextIO, Tuple
 
 import click
 import git
@@ -38,6 +38,24 @@ def git_folder_name(url: str):
     """
     url_parts = urllib.parse.urlparse(url)
     return url_parts.path.rstrip("/").rpartition("/")[2].rsplit('.', 1)[0]
+
+
+def cdb_package_infos(url: str) -> Optional[Tuple[str, str]]:
+    """
+    Return the author and the package name from a CDB URL
+
+    >>> cdb_package_infos("https://content.minetest.net/packages/AFCM/subway_miner")
+    ('AFCM', 'subway_miner')
+
+    >>> cdb_package_infos("https://content.minetest.net/packages/davidthecreator/rangedweapons/")
+    ('davidthecreator', 'rangedweapons')
+    """
+    url_parts = urllib.parse.urlparse(url)
+    url_path = url_parts.path.strip("/")
+    url_path_parts = url_path.split("/")
+    if len(url_path_parts) != 3 or url_path_parts[0] != "packages":
+        return None
+    return url_path_parts[1], url_path_parts[2]
 
 
 class ConfigPackage(TypedDict):
