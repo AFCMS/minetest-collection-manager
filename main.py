@@ -58,7 +58,7 @@ def cdb_package_infos(url: str) -> Optional[Tuple[str, str]]:
     return url_path_parts[1], url_path_parts[2]
 
 
-PackageCategory = Literal["mods"]
+PackageCategory = Literal["mods", "client_mods", "games", "texture_packs"]
 PackageType = Literal["git", "cdb"]
 
 
@@ -178,8 +178,8 @@ def cli():
 @click.argument("config_file",
                 type=click.Path(file_okay=True, dir_okay=False, writable=True, readable=True, resolve_path=True,
                                 allow_dash=False, path_type=pathlib.Path))
-@click.argument("category", type=click.Choice(["mods"], case_sensitive=False))
-@click.argument("package_type", type=click.Choice(["git"], case_sensitive=False))
+@click.argument("category", type=click.Choice(["mods", "client_mods", "games", "texture_packs"], case_sensitive=False))
+@click.argument("package_type", type=click.Choice(["git", "cdb"], case_sensitive=False))
 @click.argument("url", type=str)
 @click.option("--folder-name", type=str)
 @click.option("--git-remote-branch", type=str, default=None)
@@ -228,8 +228,8 @@ def add_package(config_file: pathlib.Path, category: PackageCategory, package_ty
 @click.argument("config_file",
                 type=click.Path(file_okay=True, dir_okay=False, writable=True, readable=True, resolve_path=True,
                                 allow_dash=False, path_type=pathlib.Path))
-@click.argument("category", type=click.Choice(["mods"], case_sensitive=False))
-@click.argument("package_type", type=click.Choice(["git"], case_sensitive=False))
+@click.argument("category", type=click.Choice(["mods", "client_mods", "games", "texture_packs"], case_sensitive=False))
+@click.argument("package_type", type=click.Choice(["git", "cdb"], case_sensitive=False))
 @click.argument("url", type=str)
 def remove_package(config_file: pathlib.Path, category: PackageCategory, package_type: PackageType, url: str):
     """
@@ -263,7 +263,9 @@ def update(config_file: io.TextIOWrapper, collection: pathlib.Path):
     config = get_validated_config(config_file, console)
 
     mod_count = len(config["content"]["mods"])
+    csm_count = len(config["content"]["mods"])
     game_count = len(config["content"]["games"])
+    txp_count = len(config["content"]["texture_packs"])
     console.log(f"[green]Updating {mod_count} mods...")
 
     # Determine the collection folder
@@ -275,30 +277,33 @@ def update(config_file: io.TextIOWrapper, collection: pathlib.Path):
                                 rich.progress.TimeElapsedColumn(),
                                 console=console) as progress:
         task_mods = progress.add_task(f"[green]Updating mods...", total=mod_count, start=(mod_count == 0))
-        task_client_mods = progress.add_task(f"[green]Updating client mods...", total=3, start=False)
+        task_client_mods = progress.add_task(f"[green]Updating client mods...", total=csm_count, start=(csm_count == 0))
         task_games = progress.add_task(f"[green]Updating games...", total=game_count, start=(game_count == 0))
-        task_texturepacks = progress.add_task(f"[green]Updating texture packs...", total=3, start=False)
+        task_texturepacks = progress.add_task(f"[green]Updating texture packs...", total=txp_count,
+                                              start=(txp_count == 0))
 
+        if mod_count == 0:
+            progress.stop_task(task_mods)
         if game_count == 0:
             progress.stop_task(task_games)
+        if csm_count == 0:
+            progress.stop_task(task_client_mods)
+        if txp_count == 0:
+            progress.stop_task(task_texturepacks)
 
-        collection_folder_mods = collection_folder / "mods"
-        collection_folder_games = collection_folder / "games"
+        def update_packages(task: rich.progress.TaskID, package_category: PackageCategory):
+            progress.start_task(task)
+            for package in config["content"][package_category]:
 
-        progress.start_task(task_mods)
-        for mod in config["content"]["mods"]:
+                if package["type"] == "git":
+                    update_package_git_repo(package, collection_folder / package_category, console)
+                    # time.sleep(1)
+                    progress.update(task_mods, advance=1)
 
-            if mod["type"] == "git":
-                update_package_git_repo(mod, collection_folder_mods, console)
-                # time.sleep(1)
-                progress.update(task_mods, advance=1)
-
-        progress.start_task(task_games)
-        for game in config["content"]["games"]:
-
-            if game["type"] == "git":
-                update_package_git_repo(game, collection_folder_games, console)
-                progress.update(task_games, advance=1)
+        update_packages(task_mods, "mods")
+        update_packages(task_client_mods, "client_mods")
+        update_packages(task_games, "games")
+        update_packages(task_texturepacks, "texture_packs")
 
 
 def sync_folders(input_path: pathlib.Path, output_path: pathlib.Path, name: str, console: rich.console.Console):
@@ -310,12 +315,12 @@ def sync_folders(input_path: pathlib.Path, output_path: pathlib.Path, name: str,
             if p.is_dir():
                 if (output_path / p.name).exists():
                     if (output_path / p.name).is_symlink() and (output_path / p.name).readlink() == p:
-                        console.log(f"[green] [blue]{p.name}[green] {name} is already linked in collection")
+                        console.log(f"[green] ({name}) [blue]{p.name}[green] is already linked in collection")
                     else:
-                        console.log(f"[red] Cant link [blue]{p.name}[red] {name}, folder already exist in collection")
+                        console.log(f"[red] ({name}) Cant link [blue]{p.name}[red], folder already exist in collection")
                 else:
                     (output_path / p.name).symlink_to(p)
-                    console.log(f"[green] Linked [blue]{p.name}[green] {name} in collection")
+                    console.log(f"[green] ({name}) Linked [blue]{p.name}[green] in collection")
 
 
 @cli.command()
@@ -332,17 +337,8 @@ def sync_dev(collection: pathlib.Path, dev_directory: pathlib.Path):
     # Load console
     console = rich.console.Console()
 
-    collection_games = collection / "games"
-    dev_directory_games = dev_directory / "games"
-
-    collection_mods = collection / "mods"
-    dev_directory_mods = dev_directory / "mods"
-
-    # Link Games
-    sync_folders(dev_directory_games, collection_games, "game", console)
-
-    # Link Mods
-    sync_folders(dev_directory_mods, collection_mods, "mod", console)
+    for cat in ["mods", "client_mods", "games", "texture_packs"]:
+        sync_folders(dev_directory / cat, collection / cat, cat, console)
 
 
 @cli.command()
@@ -359,17 +355,8 @@ def sync(collection: pathlib.Path, user_directory: pathlib.Path):
     # Load console
     console = rich.console.Console()
 
-    user_directory_games = user_directory / "games"
-    collection_games = collection / "games"
-
-    user_directory_mods = user_directory / "mods"
-    collection_mods = collection / "mods"
-
-    # Link Games
-    sync_folders(collection_games, user_directory_games, "game", console)
-
-    # Link Mods
-    sync_folders(collection_mods, user_directory_mods, "mod", console)
+    for cat in ["mods", "client_mods", "games", "texture_packs"]:
+        sync_folders(collection / cat, user_directory / cat, cat, console)
 
 
 if __name__ == "__main__":

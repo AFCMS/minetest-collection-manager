@@ -56,13 +56,21 @@
         "mods": {
           "$ref": "#/definitions/package_array"
         },
+        "client_mods": {
+          "$ref": "#/definitions/package_array"
+        },
         "games": {
+          "$ref": "#/definitions/package_array"
+        },
+        "texture_packs": {
           "$ref": "#/definitions/package_array"
         }
       },
       "required": [
         "mods",
-        "games"
+        "client_mods",
+        "games",
+        "texture_packs"
       ],
       "additionalProperties": false
     },
