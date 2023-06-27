@@ -272,11 +272,52 @@ def update(config_file: io.TextIOWrapper, collection: pathlib.Path):
 
 
 @cli.command()
-def sync_dev():
+@click.argument("collection",
+                type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True, resolve_path=True,
+                                allow_dash=False, path_type=pathlib.Path))
+@click.argument("dev_directory",
+                type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True, resolve_path=True,
+                                allow_dash=False, path_type=pathlib.Path))
+def sync_dev(collection: pathlib.Path, dev_directory: pathlib.Path):
     """
     Sync a development folder with a collection folder by symlinking all folders if possible
     """
-    pass
+    # TODO: remove duplicated code
+
+    # Load console
+    console = rich.console.Console()
+
+    collection_games = collection / "games"
+    dev_directory_games = dev_directory / "games"
+
+    collection_mods = collection / "mods"
+    dev_directory_mods = dev_directory / "mods"
+
+    # Link Games
+    if dev_directory_games.exists() and dev_directory_games.is_dir():
+        for p in dev_directory_games.iterdir():
+            if p.is_dir():
+                if (collection_games / p.name).exists():
+                    if (collection_games / p.name).is_symlink() and (collection_games / p.name).readlink() == p:
+                        console.log(f"[green] [blue]{p.name}[green] game is already linked in collection")
+                    else:
+                        console.log(f"[red] Cant link [blue]{p.name}[red] game, folder already exist in collection")
+                else:
+                    (collection_games / p.name).symlink_to(p)
+                    console.log(f"[green] Linked [blue]{p.name}[green] game in collection")
+
+    # Link Mods
+    if dev_directory_mods.exists() and dev_directory_mods.is_dir():
+        for p in dev_directory_mods.iterdir():
+            if p.is_dir():
+                if (collection_mods / p.name).exists():
+                    if (collection_mods / p.name).is_symlink() and (collection_mods / p.name).readlink() == p:
+                        console.log(f"[green] [blue]{p.name}[green] mod is already linked in collection")
+                    else:
+                        console.log(f"[red] Cant link [blue]{p.name}[red] mod, folder already exist in collection")
+                else:
+                    (collection_mods / p.name).symlink_to(p)
+                    console.log(f"[green] Linked [blue]{p.name}[green] mod in collection")
 
 
 @cli.command()
