@@ -82,6 +82,16 @@ class Config(TypedDict):
     auto_sort: Optional[bool]
 
 
+class CDBPackage(TypedDict):
+    author: str
+    name: str
+    release: int
+    short_description: str
+    thumbnail: str
+    title: str
+    type: Literal["mod", "game", "txp"]
+
+
 ASSUMED_REMOTE_NAME = "origin"
 
 
