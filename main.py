@@ -87,9 +87,10 @@ def update_package_git_repo(package: ConfigPackage, collection_folder: pathlib.P
             default_remote_branch = package.get("git_remote_branch") or remote.refs[0].remote_head
 
             # Pull remote changes
-            remote_pull_changes = remote.pull(default_remote_branch)
-            # console.log("REMOTE PULL CHANGES:", remote_pull_changes)
+            remote.pull(default_remote_branch)
 
+            # remote_pull_changes = remote.pull(default_remote_branch)
+            # console.log("REMOTE PULL CHANGES:", remote_pull_changes)
             # console.log("DEFAULT REMOTE BRANCH:", default_remote_branch)
 
             # Update submodules
