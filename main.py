@@ -59,7 +59,7 @@ def cdb_package_infos(url: str) -> Optional[Tuple[str, str]]:
 
 
 PackageCategory = Literal["mods"]
-PackageType = Literal["git"]
+PackageType = Literal["git", "cdb"]
 
 
 class ConfigPackage(TypedDict):
