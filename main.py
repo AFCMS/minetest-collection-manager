@@ -323,6 +323,8 @@ def sync_folders(input_path: pathlib.Path, output_path: pathlib.Path, name: str,
     if input_path.exists() and input_path.is_dir():
         for p in input_path.iterdir():
             if p.is_dir():
+                if not output_path.exists():
+                    output_path.mkdir()
                 if (output_path / p.name).exists():
                     if (output_path / p.name).is_symlink() and (output_path / p.name).readlink() == p:
                         console.log(f"[green] ({name}) [blue]{p.name}[green] is already linked in collection")
@@ -347,8 +349,8 @@ def sync_dev(collection: pathlib.Path, dev_directory: pathlib.Path):
     # Load console
     console = rich.console.Console()
 
-    for cat in ["mods", "client_mods", "games", "texture_packs"]:
-        sync_folders(dev_directory / cat, collection / cat, cat, console)
+    for cat in zip(["mods", "client_mods", "games", "texture_packs"], ["mods", "clientmods", "games", "textures"]):
+        sync_folders(dev_directory / cat[0], collection / cat[0], cat[0], console)
 
 
 @cli.command()
@@ -364,9 +366,8 @@ def sync(collection: pathlib.Path, user_directory: pathlib.Path):
     """
     # Load console
     console = rich.console.Console()
-
-    for cat in ["mods", "client_mods", "games", "texture_packs"]:
-        sync_folders(collection / cat, user_directory / cat, cat, console)
+    for cat in zip(["mods", "client_mods", "games", "texture_packs"], ["mods", "clientmods", "games", "textures"]):
+        sync_folders(collection / cat[0], user_directory / cat[1], cat[0], console)
 
 
 @cli.command()
