@@ -1,5 +1,7 @@
 # Minetest Collection Manager
 
+![Screenshot](screenshot.png)
+
 This project aims to help maintaining a collection of Minetest content (mods, games, etc) outside a Minetest user
 directory. It allows sharing this collection with multiple Minetest installs.
 
