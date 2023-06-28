@@ -273,7 +273,7 @@ def update(config_file: io.TextIOWrapper, collection: pathlib.Path):
     config = get_validated_config(config_file, console)
 
     mod_count = len(config["content"]["mods"])
-    csm_count = len(config["content"]["mods"])
+    csm_count = len(config["content"]["client_mods"])
     game_count = len(config["content"]["games"])
     txp_count = len(config["content"]["texture_packs"])
     console.log(f"[green]Updating {mod_count} mods...")
