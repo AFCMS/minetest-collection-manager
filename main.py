@@ -308,7 +308,7 @@ def update(config_file: io.TextIOWrapper, collection: pathlib.Path):
                 if package["type"] == "git":
                     update_package_git_repo(package, collection_folder / package_category, console)
                     # time.sleep(1)
-                    progress.update(task_mods, advance=1)
+                    progress.update(task, advance=1)
 
         update_packages(task_mods, "mods")
         update_packages(task_client_mods, "client_mods")
