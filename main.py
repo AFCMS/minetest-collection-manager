@@ -139,6 +139,10 @@ def update_package_git_repo(package: ConfigPackage, collection_folder: pathlib.P
         console.log(
             f"[red]Can't update [blue]{package['url']}[red], folder is not a "
             f"Git repository")
+    except git.GitCommandError as e:
+        console.log(
+            f"[red]Can't update [blue]{package['url']}[red], "
+            f"[red]Git command failed: {e.stderr}")
 
 
 def get_cdb_package_list(url: str) -> List[CDBPackage]:
